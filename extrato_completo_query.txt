@@ -1,0 +1,583 @@
+SELECT  :empreendimento_st_nome emp_st_nome                       
+        , :codigo_contrato cto_in_codigo                  
+        , :valorcontrato cto_re_valorcontrato 
+        , :data_cadastro                   cto_dt_cadastro                   
+        , :data_assinatura                 cto_dt_assinatura                 
+        , :status                 cto_ch_status                 
+        , :nome                       agn_st_nome                       
+        , :descricao                  cus_st_descricao                  
+        , :custo_reduzido                   cus_in_reduzido                   
+        , par.par_in_codigo                     
+        , par.par_ch_parcela                    
+        , par.par_ch_receita                    
+        , par.par_dt_vencimento                 
+        , ROUND( DECODE( :p_cons_jr_tp_sac, 'S', DECODE( par.pai_par_ch_origem , 'T', tpb.tpr_re_valororiginal
+                                                                            , 'S', par.par_re_vlroriginalsac
+                                                                                  , NVL( par.par_re_valororiginal, 0))
+                                            , NVL( par.par_re_valororiginal, 0)), 2) * NVL( 1, 1)  par_re_valororiginal   
+        , ( ROUND( NVL( par.par_re_valororiginal, 0), 4)
+          + ROUND( NVL( par.par_re_valorjuros, 0), 4)
+          + ROUND( NVL( par.par_re_valorjurosbx, 0), 4)
+          + ROUND( NVL( par.par_re_valorcorrecao, 0), 4)
+          + ROUND( NVL( par.par_re_valorcorrecaobx, 0), 4)
+          + ROUND( NVL( par.par_re_valorjurosren, 0), 4)) * NVL( 1, 1)    par_re_valorcorrigido   
+        , mgcar.pck_car_fnc.fnc_car_origemparcela@life( par.org_tab_in_codigo
+                                                  , par.org_pad_in_codigo
+                                                  , par.org_in_codigo
+                                                  , par.org_tau_st_codigo
+                                                  , par.cto_in_codigo
+                                                  , par.par_in_codigo
+                                                  , par.par_ch_origem
+                                                  , par.cnd_in_codigo
+                                                  , par.par_ch_amortizacao
+                                                  , 1) par_st_origem                  
+        , SUBSTR( obs.par_st_observacao, 1, 7) par_st_observacao                     
+        , par.par_dt_baixa                                                           
+        , DECODE( SIGN( par.par_dt_baixa - par.par_dt_vencimento), 1, par.par_dt_baixa - par.par_dt_vencimento
+                                                                  , 0) par_re_numerodias_atraso   
+        
+        , ROUND( NVL( par.par_re_valormulta, 0), 4) + ROUND( NVL( par.par_re_valoratraso, 0), 4) * NVL( 1, 1) par_re_valorencargos   
+        , ROUND( NVL( par.par_re_valordesconto, 0), 4) * NVL( 1, 1)    par_re_valordesconto                  
+        , ROUND( NVL( par.par_re_residuocobranca, 0), 4) * NVL( 1, 1)  par_re_residuocobranca                
+        
+        , ROUND( NVL( mgcar.pck_car_fnc.fnc_car_total_taxasparcela@life( par.org_tab_in_codigo
+                                                                  , par.org_pad_in_codigo
+                                                                  , par.org_in_codigo
+                                                                  , par.org_tau_st_codigo
+                                                                  , par.cto_in_codigo
+                                                                  , par.par_in_codigo), 0), 4) par_re_valortaxas          
+        
+        , ( ROUND( NVL( par.par_re_valorpago, 0), 4)
+          + ROUND( NVL( par.par_re_residuocobranca, 0), 4)
+          + ROUND( NVL( par.par_re_valormulta, 0), 4)
+          + ROUND( NVL( par.par_re_valoratraso, 0), 4)
+          - ROUND( NVL( par.par_re_valordesconto, 0), 4)
+          + ROUND( NVL( par.par_re_valorcorrecao_atr, 0), 4)
+          
+          + ROUND( NVL( mgcar.pck_car_fnc.fnc_car_total_taxasparcela@life( par.org_tab_in_codigo
+                                                                    , par.org_pad_in_codigo
+                                                                    , par.org_in_codigo
+                                                                    , par.org_tau_st_codigo
+                                                                    , par.cto_in_codigo
+                                                                    , par.par_in_codigo), 0), 4)) * NVL( 1, 1) par_re_valorpago 
+        , mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo
+                                                      , par.par_in_codigo
+                                                      , par.par_dt_baixa
+                                                      , 'R') par_ch_reajuste                       
+        , mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo
+                                                      , par.par_in_codigo
+                                                      , par.par_dt_baixa
+                                                      , 'S') par_st_siglaindice                    
+        , mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo
+                                                      , par.par_in_codigo
+                                                      , par.par_dt_baixa
+                                                      , 'F') par_st_defasagem                      
+        , TO_DATE( mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                              , par.org_pad_in_codigo
+                                                              , par.org_in_codigo
+                                                              , par.org_tau_st_codigo
+                                                              , par.cto_in_codigo
+                                                              , par.par_in_codigo
+                                                              , par.par_dt_baixa
+                                                              , 'D'), 'DD/MM/YYYY') par_dt_vigenciaindice        
+        
+        , NVL( mgcar.pck_car_fnc.fnc_car_corrige@life( par.org_tab_in_codigo
+                                                , par.org_pad_in_codigo
+                                                , par.org_in_codigo
+                                                , par.org_tau_st_codigo
+                                                , par.cto_in_codigo
+                                                , par.par_in_codigo
+                                                , par.par_dt_baixa
+                                                , :v_tipoindice  
+                                                , 'A'
+                                                , -1
+                                                , 'S'), 0) * NVL( 1, 1)    par_re_valoratualizado               
+        
+        , ROUND( NVL( mgcar.pck_car_residuoanual.fncGetValorResiduo@life( par.org_tab_in_codigo
+                                                                    , par.org_pad_in_codigo
+                                                                    , par.org_in_codigo
+                                                                    , par.org_tau_st_codigo
+                                                                    , par.cto_in_codigo
+                                                                    , par.par_in_codigo
+                                                                    , :v_dt_base), 0), 2) * NVL( 1, 1) par_re_valorresiduo    
+        
+        , ROUND( NVL( mgcar.pck_car_residuoanual.fncGetValorResiduoCorrigido@life( par.org_tab_in_codigo
+                                                                            , par.org_pad_in_codigo
+                                                                            , par.org_in_codigo
+                                                                            , par.org_tau_st_codigo
+                                                                            , par.cto_in_codigo
+                                                                            , par.par_in_codigo
+                                                                            , :v_dt_base), 0), 2) * NVL( 1, 1) par_re_valorresiduocorrigido   
+        , TRIM( par.par_in_residuo) par_in_residuo                                                                 
+        , DECODE( SIGN( mgrel.pck_rel_fnc.fnc_car_parcela_de_residuo@life( par.org_tab_in_codigo
+                                                                    , par.org_pad_in_codigo
+                                                                    , par.org_in_codigo
+                                                                    , par.org_tau_st_codigo
+                                                                    , par.cto_in_codigo
+                                                                    , par.par_in_codigo
+                                                                    , 'O') - :v_dt_base), 1, '', DECODE( res.rescob_in_codigo, NULL, '', DECODE( prr.par_in_codigo, NULL, 'C.Créd.', to_char( prr.par_in_codigo)))) cobpar_in_codigo 
+        , CASE
+            WHEN :status <> 'Q' THEN
+              DECODE(NVL(res.rescob_bo_cobrado, 'N'), 'N', (DECODE(NVL(res.rescob_re_valoracobrar, 0), 0, (DECODE(mgcar.pck_car_fnc.fnc_car_valorcorrecao@life(par.org_tab_in_codigo
+                                                                                                                                                        , par.org_pad_in_codigo
+                                                                                                                                                        , par.org_in_codigo
+                                                                                                                                                        , par.org_tau_st_codigo
+                                                                                                                                                        , par.cto_in_codigo
+                                                                                                                                                        , par.par_in_codigo
+                                                                                                                                                        , decode(par.par_ch_receitabaixa, 'B', DECODE(:vs_IndiceProjetado, 'B', par.par_dt_baixa, par.par_dt_vencimento), par.par_dt_baixa)
+                                                                                                                                                        , 'RP'
+                                                                                                                                                        , 'D'
+                                                                                                                                                        , -1) - res.rescob_re_correcaocobrada, 0, 0
+                                                                                                                                                                                                , (DECODE(par.par_in_codigo, mgrel.pck_rel_fnc.fnc_car_saldo_rescobcontrato@life( :cto_org_tab_in_codigo
+                                                                                                                                                                                                                                                                            , :cto_org_pad_in_codigo
+                                                                                                                                                                                                                                                                            , :cto_org_in_codigo
+                                                                                                                                                                                                                                                                            , :cto_org_tau_st_codigo
+                                                                                                                                                                                                                                                                            , :codigo_contrato
+                                                                                                                                                                                                                                                                            , par.par_in_codigo
+                                                                                                                                                                                                                                                                            , DECODE( SIGN( :v_dt_base - res.rescob_dt_processo), 1, res.rescob_dt_processo - 1
+                                                                                                                                                                                                                                                                                                                              , 0, res.rescob_dt_processo - 1
+                                                                                                                                                                                                                                                                                                                                  , :v_dt_base)
+                                                                                                                                                                                                                                                                            , 'P'), mgrel.pck_rel_fnc.fnc_car_saldo_rescobcontrato@life( :cto_org_tab_in_codigo
+                                                                                                                                                                                                                                                                                                                                  , :cto_org_pad_in_codigo
+                                                                                                                                                                                                                                                                                                                                  , :cto_org_in_codigo
+                                                                                                                                                                                                                                                                                                                                  , :cto_org_tau_st_codigo
+                                                                                                                                                                                                                                                                                                                                  , :codigo_contrato
+                                                                                                                                                                                                                                                                                                                                  , par.par_in_codigo
+                                                                                                                                                                                                                                                                                                                                  , DECODE( SIGN( :v_dt_base - res.rescob_dt_processo), 1, res.rescob_dt_processo-1
+                                                                                                                                                                                                                                                                                                                                                                                    , 0, res.rescob_dt_processo-1
+                                                                                                                                                                                                                                                                                                                                                                                        , :v_dt_base)
+                                                                                                                                                                                                                                                                                                                                  , 'V')
+                                                                                                                                                                                                                                                                                  , 0)) * NVL(1, 1)))
+                                                                                                        , 0))
+                                                          , 0)
+            ELSE 0
+          END rescob_re_valoracobrar 
+        , par.par_bo_confdivida                                                                                       
+        , 0 valor_quitacao                                                               
+          
+        , mgrel.pck_rel_fnc.fnc_car_data_ult_reajuste@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo) data_ult_reaj_anual                                                         
+        , ROUND( NVL( DECODE( ccb.ccr_in_codigo, NULL, 0, ccb.ccrb_re_valorbaixa), 0), 2) valor_baixa_ccred 
+        
+        , ROUND( NVL( MGREL.pck_rel_fnc.fnc_car_calcula_sld_cc_agente@life( :agn_tabela_in_codigo
+                                                                      , :agente_pad_in_codigo
+                                                                      , :agente_in_codigo
+                                                                      , :v_dt_base), 0), 2) * NVL( 1, 1) sld_ccred_corrigido 
+        , 1  cto_re_mora
+        , :cto_re_valororicontrato * NVL( 1, 1) cto_re_vlroricontrato  
+        , mfi.MFI_ST_NOSSONUMERO                             NOSSO_NUMERO 
+
+    FROM mgcar.car_caucao_parcela@life      cau
+      , mgcar.car_parcela_observacao@life  obs
+      , mgcar.car_carta_credito_baixa@life ccb  
+      , mgcar.car_parcela@life             prr
+      , mgcar.car_residuo_cobranca@life    res
+      , mgcar.car_contrato_termo@life      ctt  
+      , mgcar.car_parcela@life             par
+      , mgcar.car_tabelaprice_baixa@life   tpb
+      , MGCAR.CAR_DOCUMENTO_FINANCEIRO@life dfi
+      , MGCAR.CAR_MOVIMENTO_FINANCEIRO@life mfi
+    WHERE par.par_ch_status        <> 'I'
+      AND TRUNC( par.par_dt_baixa) <= :v_dt_base
+
+      AND (( :p_cons_confdivida  = 'N' AND NVL( par.par_bo_confdivida, 'N') = 'N')
+        OR ( :p_cons_confdivida  = 'N' AND ( par.par_bo_confdivida = 'S' AND TRUNC( par.par_dt_baixa) > :v_dt_base))
+        OR ( :p_cons_confdivida  = 'S'))
+
+      
+      AND (( :v_st_termo LIKE '%C%' AND (( par.par_bo_contratual = 'S' AND ctt.tte_in_codigo IS NULL)))
+        OR ( :v_st_termo LIKE '%F%' AND (( par.par_bo_contratual = 'N' AND ctt.tte_in_codigo IS NULL)))
+        OR ( :v_st_termo LIKE '%T%' AND ctt.tte_in_codigo IS NOT NULL
+            AND ( :v_const IS NULL OR :v_const LIKE '%-' || ctt.tte_in_codigo || '-%')
+            AND ( :v_desct IS NULL OR :v_desct NOT LIKE '%-' || ctt.tte_in_codigo || '-%')
+            AND (( :v_st_termo LIKE '%E%' AND par.par_bo_contratual = 'S')
+              OR ( :v_st_termo LIKE '%N%' AND par.par_bo_contratual = 'N'))))
+
+      AND ((( :p_parc_caucao  = 'C') AND ( cau.ctc_in_codigo > 0))
+        OR (( :p_parc_caucao  = 'N') AND ( cau.ctc_in_codigo IS NULL))
+        OR ( :p_parc_caucao  = 'T'))
+
+      AND ((( :p_par_secur = 'S') AND ( par.par_bo_securitizada = 'S'))
+        OR (( :p_par_secur = 'N') AND ( par.par_bo_securitizada = 'N'))
+        OR ( :p_par_secur = 'T'))
+
+      AND par.org_tab_in_codigo = :cto_org_tab_in_codigo
+      AND par.org_pad_in_codigo = :cto_org_pad_in_codigo
+      AND par.org_in_codigo     = :cto_org_in_codigo
+      AND par.org_tau_st_codigo = :cto_org_tau_st_codigo
+      AND par.cto_in_codigo     = :codigo_contrato
+
+      AND ctt.org_tab_in_codigo(+)= par.org_tab_in_codigo
+      AND ctt.org_pad_in_codigo(+)= par.org_pad_in_codigo
+      AND ctt.org_in_codigo    (+)= par.org_in_codigo
+      AND ctt.org_tau_st_codigo(+)= par.org_tau_st_codigo
+      AND ctt.cto_in_codigo    (+)= par.cto_in_codigo
+      AND ctt.ctt_in_codigo    (+)= par.ctt_in_codigo
+
+      AND res.org_tab_in_codigo(+)= par.org_tab_in_codigo
+      AND res.org_pad_in_codigo(+)= par.org_pad_in_codigo
+      AND res.org_in_codigo    (+)= par.org_in_codigo
+      AND res.org_tau_st_codigo(+)= par.org_tau_st_codigo
+      AND res.cto_in_codigo    (+)= par.cto_in_codigo
+      AND res.par_in_codigo    (+)= par.par_in_codigo
+
+      AND prr.org_tab_in_codigo(+)= res.org_tab_in_codigo
+      AND prr.org_pad_in_codigo(+)= res.org_pad_in_codigo
+      AND prr.org_in_codigo    (+)= res.org_in_codigo
+      AND prr.org_tau_st_codigo(+)= res.org_tau_st_codigo
+      AND prr.cto_in_codigo    (+)= res.cto_in_codigo
+      AND prr.rescob_in_codigo (+)= res.rescob_in_codigo
+
+      AND ccb.org_tab_in_codigo(+)= par.org_tab_in_codigo
+      AND ccb.org_pad_in_codigo(+)= par.org_pad_in_codigo
+      AND ccb.org_in_codigo    (+)= par.org_in_codigo
+      AND ccb.org_tau_st_codigo(+)= par.org_tau_st_codigo
+      AND ccb.cto_in_codigo    (+)= par.cto_in_codigo
+      AND ccb.par_in_codigo    (+)= par.par_in_codigo
+
+      AND obs.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND obs.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND obs.org_in_codigo     (+)= par.org_in_codigo
+      AND obs.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND obs.cto_in_codigo     (+)= par.cto_in_codigo
+      AND obs.par_in_codigo     (+)= par.par_in_codigo
+
+      AND cau.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND cau.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND cau.org_in_codigo     (+)= par.org_in_codigo
+      AND cau.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND cau.cto_in_codigo     (+)= par.cto_in_codigo
+      AND cau.par_in_codigo     (+)= par.par_in_codigo
+
+      AND tpb.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND tpb.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND tpb.org_in_codigo     (+)= par.org_in_codigo
+      AND tpb.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND tpb.cto_in_codigo     (+)= par.cto_in_codigo
+      AND tpb.par_in_codigo     (+)= par.par_in_codigo
+      
+      AND dfi.org_tab_in_codigo (+)= par.org_tab_in_codigo 
+      AND dfi.org_pad_in_codigo (+)= par.org_pad_in_codigo 
+      AND dfi.org_in_codigo (+)= par.org_in_codigo 
+      AND dfi.org_tau_st_codigo (+)= par.org_tau_st_codigo 
+      AND dfi.cto_in_codigo (+)= par.cto_in_codigo 
+      AND dfi.par_in_codigo (+)= par.par_in_codigo 
+    
+      AND mfi.dfi_in_codigo (+)= dfi.dfi_in_codigo
+
+  UNION ALL
+
+    
+    SELECT :empreendimento_st_nome                 emp_st_nome                 
+        , :codigo_contrato               cto_in_codigo               
+        , :valorcontrato cto_re_valorcontrato    
+        , :data_cadastro             cto_dt_cadastro             
+        , :data_assinatura           cto_dt_assinatura           
+        , :status           status           
+        , :nome                 agn_st_nome                 
+        , :descricao            cus_st_descricao            
+        , :custo_reduzido             cus_in_reduzido             
+        , par.par_in_codigo               
+        , par.par_ch_parcela              
+        , par.par_ch_receita             
+        , par.par_dt_vencimento           
+        , ROUND( DECODE( :p_cons_jr_tp_sac, 'S', DECODE( par.pai_par_ch_origem , 'T', tpb.tpr_re_valororiginal
+                                                                            , 'S', par.par_re_vlroriginalsac
+                                                                                  , NVL( par.par_re_valororiginal, 0))
+                                            , NVL( par.par_re_valororiginal, 0)), 2) * NVL( 1, 1)  par_re_valororiginal       
+        , NVL( mgcar.pck_car_fnc.fnc_car_corrige@life( par.org_tab_in_codigo
+                                                , par.org_pad_in_codigo
+                                                , par.org_in_codigo
+                                                , par.org_tau_st_codigo
+                                                , par.cto_in_codigo
+                                                , par.par_in_codigo
+                                                , :v_dt_base
+                                                , :v_tipoindice
+                                                , DECODE( mgcar.pck_car_fnc.fnc_car_paiorigem@life ( par.org_tab_in_codigo
+                                                                                              , par.org_pad_in_codigo
+                                                                                              , par.org_in_codigo
+                                                                                              , par.org_tau_st_codigo
+                                                                                              , par.cto_in_codigo
+                                                                                              , par.par_in_codigo), 'T', DECODE( :p_vl_corrigido, 'S', 'M', DECODE( :v_descap_tp, 'S', 'TA' ,'M'))  
+                                                                                                                  , 'S', DECODE( :p_vl_corrigido, 'S', 'M', DECODE( :v_descap_sac, 'S', 'SA', 'M')) 
+                                                                                                                        , :v_descongela)
+                                                , -1
+                                                , 'N'), 0) * NVL( 1, 1) par_re_valorcorrigido 
+        
+        , mgcar.pck_car_fnc.fnc_car_origemparcela@life( par.org_tab_in_codigo
+                                                  , par.org_pad_in_codigo
+                                                  , par.org_in_codigo
+                                                  , par.org_tau_st_codigo
+                                                  , par.cto_in_codigo
+                                                  , par.par_in_codigo
+                                                  , par.par_ch_origem
+                                                  , par.cnd_in_codigo
+                                                  , par.par_ch_amortizacao
+                                                  , 1) par_st_origem                 
+        , SUBSTR( obs.par_st_observacao, 1, 7)        par_st_observacao              
+        , TO_DATE( NULL, 'dd/mm/yyyy')                par_dt_baixa                  
+        , DECODE( SIGN( :v_dt_base - par.par_dt_vencimento), 1, :v_dt_base - par.par_dt_vencimento
+                                                          , 0) par_re_numerodias_atraso   
+        
+        , NVL( DECODE( SIGN( par.par_dt_vencimento - :v_dt_base), -1, ( ROUND( NVL( mgcar.pck_car_fnc.fnc_car_calculaencargos@life( par.org_tab_in_codigo
+                                                                                                                            , par.org_pad_in_codigo
+                                                                                                                            , par.org_in_codigo
+                                                                                                                            , par.org_tau_st_codigo
+                                                                                                                            , par.cto_in_codigo
+                                                                                                                            , par.par_in_codigo
+                                                                                                                            , :v_dt_base
+                                                                                                                            , ROUND( NVL( mgcar.pck_car_fnc.fnc_car_corrige@life( par.org_tab_in_codigo
+                                                                                                                                                                            , par.org_pad_in_codigo
+                                                                                                                                                                            , par.org_in_codigo
+                                                                                                                                                                            , par.org_tau_st_codigo
+                                                                                                                                                                            , par.cto_in_codigo
+                                                                                                                                                                            , par.par_in_codigo
+                                                                                                                                                                            , :v_dt_base
+                                                                                                                                                                            , :v_tipoindice
+                                                                                                                                                                            , DECODE( par.par_ch_origem, 'T', DECODE( :v_descap_tp, 'S', DECODE(:v_descongela, 'A', 'TA', 'TM'), :v_descongela)  
+                                                                                                                                                                                                      , 'S', DECODE( :v_descap_sac, 'S', DECODE(:v_descongela, 'A', 'SA', 'SM'), :v_descongela) 
+                                                                                                                                                                                                      , :v_descongela)
+                                                                                                                                                                            , -1
+                                                                                                                                                                            , 'S'), 0), 2)
+                                                                                                                            , 'AM'), 0), 2) 
+                                                                      ), 0), 0) * NVL( 1, 1) par_re_valorencargos          
+        , 0   par_re_valordesconto           
+        , ROUND( NVL( DECODE( SIGN( mgrel.pck_rel_fnc.fnc_car_parcela_de_residuo@life( par.org_tab_in_codigo
+                                                                                , par.org_pad_in_codigo
+                                                                                , par.org_in_codigo
+                                                                                , par.org_tau_st_codigo
+                                                                                , par.cto_in_codigo
+                                                                                , par.par_in_codigo
+                                                                                , 'D') - :v_dt_base), 1, 0, par.par_re_residuocobranca),0),4) * NVL( 1, 1) par_re_residuocobranca     
+        
+        , ROUND( NVL( mgcar.pck_car_fnc.fnc_car_total_taxasparcela@life( par.org_tab_in_codigo
+                                                                  , par.org_pad_in_codigo
+                                                                  , par.org_in_codigo
+                                                                  , par.org_tau_st_codigo
+                                                                  , par.cto_in_codigo
+                                                                  , par.par_in_codigo), 0), 4) par_re_valortaxas    
+        
+        , 0   par_re_valorpago     
+        , mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo
+                                                      , par.par_in_codigo
+                                                      , :v_dt_base
+                                                      , 'R') par_ch_reajuste    
+        , mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo
+                                                      , par.par_in_codigo
+                                                      , :v_dt_base
+                                                      , 'S') par_st_siglaindice  
+        , mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo
+                                                      , par.par_in_codigo
+                                                      , :v_dt_base
+                                                      , 'F') par_st_defasagem    
+        , TO_DATE(mgrel.pck_rel_fnc.fnc_car_busca_indicebaixa@life( par.org_tab_in_codigo
+                                                              , par.org_pad_in_codigo
+                                                              , par.org_in_codigo
+                                                              , par.org_tau_st_codigo
+                                                              , par.cto_in_codigo
+                                                              , par.par_in_codigo
+                                                              , :v_dt_base
+                                                              , 'D'), 'DD/MM/YYYY') par_dt_vigenciaindice   
+        
+        , NVL( mgcar.pck_car_fnc.fnc_car_corrige@life( par.org_tab_in_codigo
+                                                , par.org_pad_in_codigo
+                                                , par.org_in_codigo
+                                                , par.org_tau_st_codigo
+                                                , par.cto_in_codigo
+                                                , par.par_in_codigo
+                                                , :v_dt_base
+                                                , :v_tipoindice  
+                                                , 'A'
+                                                , -1
+                                                , 'S'), 0) * NVL( 1, 1)       par_re_valoratualizado   
+        
+        , CASE
+            WHEN (:cto_ch_reajusteanual = 'V' AND par.par_dt_vencimento < :v_dt_base) THEN
+              ROUND( NVL( mgcar.pck_car_residuoanual.fncGetValorResiduo@life( par.org_tab_in_codigo
+                                                                      , par.org_pad_in_codigo
+                                                                      , par.org_in_codigo
+                                                                      , par.org_tau_st_codigo
+                                                                      , par.cto_in_codigo
+                                                                      , par.par_in_codigo
+                                                                      , :v_dt_base), 0), 2) * NVL(1, 1)
+            ELSE 0
+          END par_re_valorresiduo                       
+        , CASE
+            WHEN (:cto_ch_reajusteanual = 'V' AND par.par_dt_vencimento < :v_dt_base) THEN
+              ROUND( NVL( mgcar.pck_car_residuoanual.fncGetValorResiduoCorrigido@life( par.org_tab_in_codigo
+                                                                                , par.org_pad_in_codigo
+                                                                                , par.org_in_codigo
+                                                                                , par.org_tau_st_codigo
+                                                                                , par.cto_in_codigo
+                                                                                , par.par_in_codigo
+                                                                                , :v_dt_base), 0), 2) * NVL(1, 1)
+            ELSE 0
+          END par_re_valorresiduocorrigido               
+        , TO_CHAR( NULL)   par_in_residuo               
+        , ''               cobpar_in_codigo             
+        , 0                rescob_re_valoracobrar       
+        , par.par_bo_confdivida                         
+          
+        , NVL( mgrel.pck_rel_fnc.fnc_car_valor_parcelaquitacao@life( par.org_tab_in_codigo
+                                                              , par.org_pad_in_codigo
+                                                              , par.org_in_codigo
+                                                              , par.org_tau_st_codigo
+                                                              , par.cto_in_codigo
+                                                              , par.par_in_codigo
+                                                              , :v_dt_base
+                                                              , par.par_ch_status
+                                                              , par.par_dt_status
+                                                              , par.par_dt_geracao
+                                                              , par.par_dt_vencimento
+                                                              , par.par_dt_baixa
+                                                              , par.par_ch_amortizacao
+                                                              , 'S'
+                                                              , :v_tipoindice
+                                                              , DECODE( :p_cons_taxa, 'S', DECODE( mgcar.pck_car_fnc.fnc_car_paiorigem@life ( par.org_tab_in_codigo
+                                                                                                                                      , par.org_pad_in_codigo
+                                                                                                                                      , par.org_in_codigo
+                                                                                                                                      , par.org_tau_st_codigo
+                                                                                                                                      , par.cto_in_codigo
+                                                                                                                                      , par.par_in_codigo), 'S', DECODE( :v_descap_sac, 'S', NVL(:cto_re_taxaant_sac, 0), 0)
+                                                                                                                                                          , 'T', DECODE( :v_descap_tp , 'S', NVL(:cto_re_taxaant_tp, 0), 0)
+                                                                                                                                                                , NVL( :cto_re_taxaant, 0))
+                                                                                        , DECODE( mgcar.pck_car_fnc.fnc_car_paiorigem@life ( par.org_tab_in_codigo
+                                                                                                                                      , par.org_pad_in_codigo
+                                                                                                                                      , par.org_in_codigo
+                                                                                                                                      , par.org_tau_st_codigo
+                                                                                                                                      , par.cto_in_codigo
+                                                                                                                                      , par.par_in_codigo), 'S', DECODE( :v_descap_sac, 'S', -1, 0)
+                                                                                                                                                          , 'T', DECODE( :v_descap_tp, 'S', -1, 0)
+                                                                                                                                                                , 0))
+                                                              , 'S'
+                                                              , :v_descongela),0 ) * NVL( 1, 1)  valor_quitacao 
+          
+        , mgrel.pck_rel_fnc.fnc_car_data_ult_reajuste@life( par.org_tab_in_codigo
+                                                      , par.org_pad_in_codigo
+                                                      , par.org_in_codigo
+                                                      , par.org_tau_st_codigo
+                                                      , par.cto_in_codigo) data_ult_reaj_anual                                                          
+        , 0 valor_baixa_ccred                                                                 
+        
+        , ROUND( NVL( mgrel.pck_rel_fnc.fnc_car_calcula_sld_cc_agente@life( :agn_tabela_in_codigo
+                                                                      , :agente_pad_in_codigo
+                                                                      , :agente_in_codigo
+                                                                      , :v_dt_base), 0), 2) * NVL( 1, 1) sld_ccred_corrigido 
+        , 1    cto_re_mora                                                                                                            
+        , :cto_re_valororicontrato * NVL( 1, 1) cto_re_vlroricontrato 
+        , mfi.MFI_ST_NOSSONUMERO                             NOSSO_NUMERO                                                    
+      FROM mgcar.car_caucao_parcela@life     cau
+        , mgcar.car_parcela_observacao@life obs
+        , mgcar.car_residuo_cobranca@life   res
+        , mgcar.car_contrato_termo@life     ctt 
+        , mgcar.car_parcela@life            par
+        , mgcar.car_tabelaprice_baixa@life  tpb
+        , MGCAR.CAR_DOCUMENTO_FINANCEIRO@life dfi
+        , MGCAR.CAR_MOVIMENTO_FINANCEIRO@life mfi
+    WHERE 
+          ( ( par.par_ch_status <> 'I')
+          OR ( par.par_ch_status  = 'I'
+          AND TRUNC( par.par_dt_status) > :v_dt_base))
+      AND (( par.par_dt_baixa IS NULL) OR ( TRUNC( par.par_dt_baixa) > :v_dt_base))
+      AND TRUNC( par.par_dt_geracao) <= :v_dt_base
+
+      AND (( :p_cons_confdivida  = 'N' AND NVL( par.par_bo_confdivida, 'N') = 'N')
+        OR ( :p_cons_confdivida  = 'N' AND ( par.par_bo_confdivida = 'S' AND TRUNC( par.par_dt_baixa) > :v_dt_base))
+        OR ( :p_cons_confdivida  = 'S'))
+
+      
+      AND (( :v_st_termo LIKE '%C%' AND (( par.par_bo_contratual = 'S' AND ctt.tte_in_codigo IS NULL)))
+        OR ( :v_st_termo LIKE '%F%' AND ( ( par.par_bo_contratual = 'N' AND ctt.tte_in_codigo IS NULL)))
+        OR ( :v_st_termo LIKE '%T%' AND ctt.tte_in_codigo IS NOT NULL
+            AND ( :v_const IS NULL OR :v_const LIKE '%-' || ctt.tte_in_codigo || '-%')
+            AND ( :v_desct IS NULL OR :v_desct NOT LIKE '%-' || ctt.tte_in_codigo || '-%')
+            AND (( :v_st_termo LIKE '%E%' AND par.par_bo_contratual = 'S')
+              OR ( :v_st_termo LIKE '%N%' AND par.par_bo_contratual = 'N') ) ) )
+
+      AND ((( :p_parc_caucao  = 'C') AND ( cau.ctc_in_codigo > 0))
+        OR (( :p_parc_caucao  = 'N') AND ( cau.ctc_in_codigo IS NULL))
+          OR ( :p_parc_caucao  = 'T'))
+
+      AND ((( :p_par_secur = 'S') AND ( par.par_bo_securitizada = 'S'))
+        OR (( :p_par_secur = 'N') AND ( par.par_bo_securitizada = 'N'))
+          OR ( :p_par_secur = 'T'))
+
+      AND par.org_tab_in_codigo = :cto_org_tab_in_codigo
+      AND par.org_pad_in_codigo = :cto_org_pad_in_codigo
+      AND par.org_in_codigo     = :cto_org_in_codigo
+      AND par.org_tau_st_codigo = :cto_org_tau_st_codigo
+      AND par.cto_in_codigo     = :codigo_contrato
+
+      AND ctt.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND ctt.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND ctt.org_in_codigo     (+)= par.org_in_codigo
+      AND ctt.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND ctt.cto_in_codigo     (+)= par.cto_in_codigo
+      AND ctt.ctt_in_codigo     (+)= par.ctt_in_codigo
+
+      AND res.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND res.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND res.org_in_codigo     (+)= par.org_in_codigo
+      AND res.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND res.cto_in_codigo     (+)= par.cto_in_codigo
+      AND res.par_in_codigo     (+)= par.par_in_codigo
+      AND res.rescob_in_codigo  (+)= par.rescob_in_codigo
+
+      AND obs.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND obs.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND obs.org_in_codigo     (+)= par.org_in_codigo
+      AND obs.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND obs.cto_in_codigo     (+)= par.cto_in_codigo
+      AND obs.par_in_codigo     (+)= par.par_in_codigo
+
+      AND cau.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND cau.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND cau.org_in_codigo     (+)= par.org_in_codigo
+      AND cau.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND cau.cto_in_codigo     (+)= par.cto_in_codigo
+      AND cau.par_in_codigo     (+)= par.par_in_codigo
+
+      AND tpb.org_tab_in_codigo (+)= par.org_tab_in_codigo
+      AND tpb.org_pad_in_codigo (+)= par.org_pad_in_codigo
+      AND tpb.org_in_codigo     (+)= par.org_in_codigo
+      AND tpb.org_tau_st_codigo (+)= par.org_tau_st_codigo
+      AND tpb.cto_in_codigo     (+)= par.cto_in_codigo
+      AND tpb.par_in_codigo     (+)= par.par_in_codigo 
+
+      AND dfi.org_tab_in_codigo (+)= par.org_tab_in_codigo 
+      AND dfi.org_pad_in_codigo (+)= par.org_pad_in_codigo 
+      AND dfi.org_in_codigo (+)= par.org_in_codigo 
+      AND dfi.org_tau_st_codigo (+)= par.org_tau_st_codigo 
+      AND dfi.cto_in_codigo (+)= par.cto_in_codigo 
+      AND dfi.par_in_codigo (+)= par.par_in_codigo 
+    
+      AND mfi.dfi_in_codigo (+)= dfi.dfi_in_codigo
+
+      ORDER BY par_dt_vencimento, par_in_codigo

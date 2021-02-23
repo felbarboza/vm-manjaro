@@ -1,0 +1,19 @@
+:cto_in_codigo
+:cto_org_tab_in_codigo
+:cto_org_pad_in_codigo
+:cto_org_in_codigo
+:cto_org_tau_st_codigo
+
+cto.emp_in_codigo
+cto.emp_st_codigo                     -
+cto.emp_st_nome                       --3
+cto.etp_in_codigo                     --4
+cto.etp_st_codigo                     --5
+cto.etp_st_nome                       --6
+cto.blo_in_codigo                     --7
+cto.blo_st_codigo                     --8
+cto.blo_st_nome                       --9
+cto.und_in_codigo                     --10
+cto.und_st_codigo                     --11
+cto.und_st_nome                       --12
+cto.und_re_areaprivativa    
